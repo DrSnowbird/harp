@@ -139,7 +139,11 @@ rigorously provable polynomial work complexity for several variants of the subgr
 isomorphism problem when $H$ is a tree.
 \sahad{} scales to very large graphs, and because of the Hadoop
 implementation, runs flexibly on a variety of computing resources, including
-Amazon EC2 cloud. Our specific contributions are discussed below.
+Amazon EC2 cloud. We also adapt \sahad{} in the Harp~\cite{qiu2014towards}
+framework to utilize its advanced data rotation and parallelization capability.
+It scales to graphs with up to $1.2$ billion edges. 
+
+Our specific contributions are discussed below.
 
 
 %\begin{enumerate}
@@ -163,19 +167,6 @@ $O(k|E_G|2^{2k}e^k\log{(1/\delta)}\frac{1}{\varepsilon^2})$, which is more than
 the running time of the sequential algorithm of~\cite{alon2008biomolecular}
 by just a factor of $2^k$.
 %\item
-
-\iffalse
-%%%%%%%%%
-One of the main challenges for parallel algorithms is that only a part of the
-graph can be stored in memory if it is very large. Most real networks are characterized
-by small diameter and high expansion, so that even storing the $d$-neighborhood
-of a node  $v$ (consisting of nodes within distance $d$ of $v$) is infeasible.
-This makes searching for subgraphs with diameter more than $d$ very challenging,
-since an embedding might be split across partitions. Our approach based on
-color-coding solves this ingeniously by considering ``colorful'' embeddings,
-as discussed in Section~\ref{sec:intro-color-coding}.
-%%%%%%%%
-\fi
 
 \smallskip
 \textbf{2.} We demonstrate our results on instances generated using the Erd\"{o}s-Renyi
@@ -219,12 +210,11 @@ performance by about 20\%, but improved partitioning does not seem to help.
 
 \smallskip
 \textbf{6.} Finally, we implement \sahad{} within the Harp~\cite{qiu2014towards} framework
--- the new algorithm is called \harpsahad{}.  \harpsahad{}
+-- the new algorithm is called \harpsahad{}. \harpsahad{}
 yields an order of magnitude improvement in performance, as a result of
 its flexibility in task scheduling, data flow control and in memory cache. We
-are able to scale to networks with up to hundreds of millions of edges using the
-\harpsahad{} 
-with unlabeled templates with 7 nodes. 
+are able to scale to networks with up to billions of edges using the
+\harpsahad{}. 
 
 
 

@@ -5,9 +5,11 @@ We carry out a detailed experimental analysis of  \sahad{}, \ensahad{} and
 \harpsahad{}. We focus on three aspects:
 
 ({\it i}) \emph{Quality of the solution}:
-We measure the empirical approximation error of our algorithms and show that the error is
-very small so in the following experiments we run the program for a single
-iteration;
+We compare the color coding results with exact count on small graphs in order to
+measure the empirical approximation error of our algorithms and show that the
+error is very small (less than 0.5\% with one iteration as shown in
+Figure~\ref{fig::error}) so in the following experiments we run the program for
+a single iteration;
 
 ({\it ii}) \emph{Scalability of the algorithms as a function of
 template size, graph size and computing resources:}
@@ -44,7 +46,7 @@ Method & Networks & Templates & Performance \\
 \hline
 \ensahad{} & 12M edges & 5 nodes & \vtop{\hbox{\strut 20\% improvement}\hbox{\strut over \sahad{}}} \\
 \hline
-\harpsahad{} & 0.5B edges & 7 nodes & \vtop{\hbox{\strut 7 - 8 times faster}\hbox{\strut than \sahad{}}} \\
+\harpsahad{} & 1.2B edges & upto 7 nodes & \vtop{\hbox{\strut 7 - 8 times faster}\hbox{\strut than \sahad{}}} \\
 \hline
 \end{tabular}
 }
@@ -55,14 +57,16 @@ Method & Networks & Templates & Performance \\
 \label{sec:datasets-comp}
 
 \subsubsection{Datasets}
+
 For our experiments, we use synthetic social contact networks of the following
 cities and regions: Miami, Chicago, New River Valley (NRV), and New York City
 (NYC) (see~\cite{barrett2009generation} for detains). We consider demographic
 labels -- \{kid, youth, adult, senior\} (based on the age) and gender for
 individuals.  We also run experiments on a $G(n,p)$ graph (denoted GNP100) with
 $n$ nodes, each pair of nodes connected with probability $p$, and randomly
-assigned node labels. We also experiment on few other networks: Web-Google~\cite{snap},
-RoadNet (rNet)~\cite{snap} and Chung-Lu random graphs~\cite{chung2002connected}.  Table~\ref{tab:dataset} summarizes the
+assigned node labels. We also experiment on few other networks:
+Web-Google~\cite{snap}, RoadNet (rNet)~\cite{snap}, Twitter~\cite{Kwak10www} and Chung-Lu random
+graphs~\cite{chung2002connected}.  Table~\ref{tab:dataset} summarizes the
 characteristics of the networks.
 
 \begin{table}[hptb]
@@ -73,6 +77,7 @@ characteristics of the networks.
 \hline
 Network & No. of Nodes(in million) & No. of Edges(in million) \\
 \hline
+Twitter & $41.7$ & $1202.5$ \\
 Miami & $2.1$ & $52.7$ \\
 Chicago & $9.0$ & $268.9$ \\
 NYC & $18.0$ & $480.0$ \\
@@ -674,6 +679,12 @@ partition.
 
 \fi
 
+
+
+
+
+
+
 \subsection{Performance of \harpsahad{}}
 \label{sec:exp:harp}
 In this section, we discuss the performance of \harpsahad{} and compare its performance
@@ -712,10 +723,10 @@ about 11 times from Web-Google to Miami.
 
 In this section, we discuss how Harp performs with different templates and
 graphs. We start our experiment by running Harp against different templates with
-$|k|$ from 3 to 7, and on 3 graphs with number of nodes varying from 0.9
-millions to 18 millions. Figure~\ref{fig:harp-varying-templates} shows that the
+$|k|$ from 3 to 7, and on 4 graphs with number of nodes varying from 0.9
+millions to 41 millions. Figure~\ref{fig:harp-varying-templates} shows that the
 computational cost on Harp is more sensitive to the size of the graph than the
-size of the templates.   
+size of the templates.    
 
 
 Then we studies the performance by controlling the number of nodes in a graph and
