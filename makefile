@@ -133,10 +133,10 @@ DAALAY   ?= a y
 
 DIR:=.
 ifeq ($(ENV_ARCH),"")
-WORKDIR    ?= $(DIR)/../__work_$(CMPLRDIRSUFF.$(COMPILER))/$(PLAT)
+WORKDIR    ?= $(DIR)/../__work$(CMPLRDIRSUFF.$(COMPILER))/$(PLAT)
 RELEASEDIR ?= $(DIR)/../__release_$(_OS)$(CMPLRDIRSUFF.$(COMPILER))
 else
-WORKDIR    ?= $(DIR)/../__work_$(ENV_ARCH)_$(CMPLRDIRSUFF.$(COMPILER))/$(PLAT)
+WORKDIR    ?= $(DIR)/../__work$(ENV_ARCH)$(CMPLRDIRSUFF.$(COMPILER))/$(PLAT)
 RELEASEDIR ?= $(DIR)/../__release_$(ENV_ARCH)_$(_OS)$(CMPLRDIRSUFF.$(COMPILER))
 endif
 RELEASEDIR.daal    := $(RELEASEDIR)/daal
