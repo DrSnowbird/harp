@@ -28,8 +28,13 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
+import java.util.ArrayList;
+import java.util.Random;
+
 public final class DataLoader
 {
+    protected static final Log LOG = LogFactory
+        .getLog(DataLoader.class);
 
     private DataLoader() {
     }
@@ -107,4 +112,80 @@ public final class DataLoader
 
         return points;
     }
+
+    /**
+     * @bridf load points from yfcc vgg feature files
+     * id   vgg 4096    points
+     *
+     */
+    public static double[] loadPointsYFCC100M(String file,
+            int pointsPerFile, int cenVecSize,
+            Configuration conf) throws Exception {
+
+        FSDataInputStream in = null;
+        BufferedReader reader = null;
+        String line = null;
+        //double[] points = new double[pointsPerFile*cenVecSize];
+
+        ArrayList<Double> points = new ArrayList<Double>();
+        ArrayList<String> ids = new ArrayList<String>();
+
+        Path pointFilePath = new Path(file);
+        FileSystem fs = pointFilePath.getFileSystem(conf);
+
+        in = fs.open(pointFilePath);
+        reader = new BufferedReader(new InputStreamReader(in), 1048576);
+
+        int arraySize = 0;
+        int yfccFormat = 0;
+        while((line = reader.readLine())!= null){
+                // line fmt: id \t vgg \t 4096 \t points...
+                String[] parts = line.split("\t");
+
+                //
+                // hack here: either yfcc100m format or auto gen by random
+                //
+
+                if (parts.length ==4){
+                    //YFCC format found
+                    yfccFormat = 1;
+                    //ids.add(parts[0]);
+                    for(String w:parts[3].split(" ")){
+                        points.add( Double.parseDouble(w)) ;
+                        arraySize ++;
+                    }
+                }
+                else{
+                    //random number format
+                    //number of points
+                    int numPoints = Integer.parseInt(parts[0]);
+                    Random r = new Random();
+                    for(int i=0; i< numPoints; i++){
+                        for(int j=0; j< cenVecSize; j++){
+                            points.add(r.nextDouble());
+                            arraySize ++;
+                        }
+                    }
+                }
+        }
+
+        in.close();
+        reader.close();
+
+        if (yfccFormat == 1){
+            LOG.info("reading data points: " + arraySize);
+        }
+        else{
+            LOG.info("generating data points: " + arraySize);
+        }
+ 
+        //convert into double[]
+        double[] pointsRet = new double[arraySize];
+        for(int i = 0; i < arraySize; i++){
+            pointsRet[i] = points.get(i);
+        }
+        
+       return pointsRet;
+    }
+
 }

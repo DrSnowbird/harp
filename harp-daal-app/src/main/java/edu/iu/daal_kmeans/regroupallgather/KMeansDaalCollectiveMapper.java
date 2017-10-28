@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -151,19 +152,6 @@ public class KMeansDaalCollectiveMapper
                 Configuration conf, Context context)
             throws IOException {
 
-            // Load centroids
-            Table<DoubleArray> cenTable =
-                new Table<>(0, new DoubleArrPlus());
-            if (this.isMaster()) {
-                createCenTable(cenTable, numCentroids,
-                        numCenPars, cenVecSize);
-                loadCentroids(cenTable, cenVecSize, cenDir
-                        + File.separator
-                        + Constants.CENTROID_FILE_NAME, conf);
-            }
-            // Bcast centroids
-            bcastCentroids(cenTable, this.getMasterID());
-
             //pointArrays are used in daal table with feature dimension to be
             //vectorSize instead of cenVecSize
             List<double[]> pointArrays =
@@ -178,12 +166,67 @@ public class KMeansDaalCollectiveMapper
             long[] array_startP = new long[pointArrays.size()];
             double[][] array_data = new double[pointArrays.size()][];
 
+            int totalRecCnt = 0;
             for(int k=0;k<pointArrays.size();k++)
             {
                 array_data[k] = pointArrays.get(k);
                 array_startP[k] = totalLength;
                 totalLength += pointArrays.get(k).length;
+                LOG.info("PointArray[" + k + "], len=" + pointArrays.get(k).length + " , reccnt=" +
+                        pointArrays.get(k).length*1.0/vectorSize);
+                totalRecCnt += pointArrays.get(k).length/vectorSize;
             }
+            LOG.info("Total load records number: " + totalRecCnt);
+
+
+            //random samples to init the centroids
+            // Load centroids
+            Table<DoubleArray> cenTable =
+                new Table<>(0, new DoubleArrPlus());
+            if (this.isMaster()) {
+                createCenTable(cenTable, numCentroids,
+                        numCenPars, cenVecSize);
+                LOG.info("Loading Centroids at master, numCenPars=" + numCenPars + ",cenVecSize=" +
+                        cenVecSize + ",num=" + numCentroids);
+                // random init from sample points
+                Random r = new Random();
+                double[] cent_data = new double[numCentroids*vectorSize];
+                long recid, pos;
+                for(int j=0; j < numCentroids; j++){
+                    //recid = r.nextLong(totalLength);
+                    recid = r.nextInt((int)totalLength/vectorSize);
+                    pos = recid * vectorSize;
+                    //get the data point of recid
+                    
+                    for(int k=pointArrays.size()-1;k>=0;k--){
+                        if (pos >= array_startP[k]){
+                            //found
+                            //cent_data[j] = array_data[k][(int)(recid - array_startP[k])];
+                            for(int l=0; l < vectorSize; l++){
+                                cent_data[j*vectorSize + l] = array_data[k][(int)(pos - array_startP[k]) + l];
+                            }
+
+                            break;
+                        }
+                    }
+                    LOG.info("Load Centroid at :" + recid + " , val=" + cent_data[j*vectorSize + 0] + 
+                            "," + cent_data[j*vectorSize+1] +"," + cent_data[j*vectorSize+2] +"," + cent_data[j*vectorSize+3]);
+                }
+
+                //loadCentroids(cenTable, cenVecSize, cenDir
+                //        + File.separator
+                //        + Constants.CENTROID_FILE_NAME, conf);
+ 
+                loadCentroidsFromData(cenTable, cenVecSize, cent_data);
+
+            }
+            // Bcast centroids
+            bcastCentroids(cenTable, this.getMasterID());
+
+
+
+
+
 
             //create daal table for cenTable first so it can be allocated
             //on HBM if available
@@ -356,6 +399,11 @@ public class KMeansDaalCollectiveMapper
 
                 long t7 = System.currentTimeMillis();
 
+                // print the sum of centroids, a kind of criteria of stop condition
+                printInteria(cenTable,cenVecSize);
+
+
+
                 train_time += (t7 - t1);
                 compute_time += ((t3 -t2) + (t6 - t5));
                 convert_time += ((t2- t1) + (t4 - t3));
@@ -412,16 +460,17 @@ public class KMeansDaalCollectiveMapper
             int cenParSize =
                 numCentroids / numCenPartitions;
             int cenRest = numCentroids % numCenPartitions;
+            int totalSize = 0, size =0;
             for (int i = 0; i < numCenPartitions; i++) {
                 if (cenRest > 0) {
-                    int size = (cenParSize + 1) * cenVecSize;
+                    size = (cenParSize + 1) * cenVecSize;
                     DoubleArray array =
                         DoubleArray.create(size, false);
                     cenTable.addPartition(new Partition<>(i,
                                 array));
                     cenRest--;
                 } else if (cenParSize > 0) {
-                    int size = cenParSize * cenVecSize;
+                    size = cenParSize * cenVecSize;
                     DoubleArray array =
                         DoubleArray.create(size, false);
                     cenTable.addPartition(new Partition<>(i,
@@ -429,8 +478,12 @@ public class KMeansDaalCollectiveMapper
                 } else {
                     break;
                 }
+                totalSize += size;
             }
-                }
+
+            LOG.info("Create Centroid Table Size: " + totalSize*8*1.0/(1024*1024) + "(MB)");
+
+        }
 
         /**
          * Fill data from centroid file to cenDataMap
@@ -481,6 +534,74 @@ public class KMeansDaalCollectiveMapper
             LOG.info("Load centroids (ms): "
                     + (endTime - startTime));
             }
+
+        /**
+         * Fill data from centroid data(double array)
+         * 
+         * @param cenDataMap
+         * @param vectorSize
+         * @param centdata
+         */
+ 
+        private void
+            loadCentroidsFromData(Table<DoubleArray> cenTable,
+                    int cenVecSize, double[] centdata){
+            long startTime = System.currentTimeMillis();
+
+            int curPos = 0;
+            for (Partition<DoubleArray> partition : cenTable
+                    .getPartitions()) {
+                DoubleArray array = partition.get();
+                double[] cData = array.get();
+                int start = array.start();
+                int size = array.size();
+                for (int i = start; i < (start + size); i++) {
+                    // Don't set the first element in each row
+                    if (i % cenVecSize != 0) {
+                        cData[i] = centdata[curPos];
+                        curPos++;
+                    }
+                }
+                    }
+            long endTime = System.currentTimeMillis();
+            LOG.info("Load centroids (ms): "
+                    + (endTime - startTime));
+            }
+
+        /**
+         * Print interia value of the centroids
+         * 
+         * @param cenDataMap
+         * @param vectorSize
+         * @param centdata
+         */
+ 
+        private void
+            printInteria(Table<DoubleArray> cenTable,
+                    int cenVecSize){
+            long startTime = System.currentTimeMillis();
+
+            int curPos = 0;
+            double interia = 0.;
+            for (Partition<DoubleArray> partition : cenTable
+                    .getPartitions()) {
+                DoubleArray array = partition.get();
+                double[] cData = array.get();
+                int start = array.start();
+                int size = array.size();
+                for (int i = start; i < (start + size); i++) {
+                    // the first element in each row is numpoints
+                    if (i % cenVecSize != 0) {
+                        interia += cData[i] * cData[i];
+                    }
+                }
+            }
+            long endTime = System.currentTimeMillis();
+            LOG.info("Iteria of the centroids: " + interia + ","
+                    + (endTime - startTime) + "(ms)");
+
+            }
+
 
         /**
          * Broadcast centroids data in partitions

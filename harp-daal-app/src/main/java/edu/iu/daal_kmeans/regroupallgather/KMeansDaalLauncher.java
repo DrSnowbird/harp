@@ -91,11 +91,13 @@ public class KMeansDaalLauncher extends Configured
     int mem = Integer.parseInt(args[7]);
     String workDir = args[8];
     String localPointFilesDir = args[9];
-    boolean regenerateData = true;
-    if (args.length == 11) {
-      regenerateData =
-        Boolean.parseBoolean(args[10]);
-    }
+
+    //boolean regenerateData = true;
+    boolean regenerateData = false;
+    //if (args.length == 11) {
+    //  regenerateData =
+    //    Boolean.parseBoolean(args[10]);
+    //}
     System.out.println("Number of Map Tasks = "
       + numMapTasks);
     int numPointFiles =
@@ -246,6 +248,7 @@ public class KMeansDaalLauncher extends Configured
     // -Xmx120000m -Xms120000m
     // int xmx = (mem - 5000) > (mem * 0.5)
     //   ? (mem - 5000) : (int) Math.ceil(mem * 0.5);
+    //int xmx = (int) Math.ceil((mem - 5000)*0.5);
     int xmx = (int) Math.ceil((mem - 5000)*0.5);
     int xmn = (int) Math.ceil(0.25 * xmx);
     jobConf.set(
