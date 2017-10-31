@@ -126,8 +126,9 @@ public final class DataLoader
         BufferedReader reader = null;
         String line = null;
         //double[] points = new double[pointsPerFile*cenVecSize];
+        double[] pointsRet={};
 
-        //ArrayList<Double> points = new ArrayList<Double>();
+        ArrayList<Double> points = new ArrayList<Double>();
         //ArrayList<String> ids = new ArrayList<String>();
 
         Path pointFilePath = new Path(file);
@@ -136,10 +137,10 @@ public final class DataLoader
         in = fs.open(pointFilePath);
         reader = new BufferedReader(new InputStreamReader(in), 1048576);
 
-        //memory compact version
-        int BLOCKSIZE = 512*1024*1024/8; //512MB
-        double[] points = new double[BLOCKSIZE];
-        int pointsCnt = 0;
+        ////memory compact version
+        //int BLOCKSIZE = 512*1024*1024/8; //512MB
+        //double[] points = new double[BLOCKSIZE];
+        //int pointsCnt = 0;
 
 
         int arraySize = 0;
@@ -158,40 +159,43 @@ public final class DataLoader
                     //ids.add(parts[0]);
                     for(String w:parts[3].split(" ")){
                         //
-                        //points.add( Double.parseDouble(w)) ;
-                        points[pointsCnt] = Double.parseDouble(w);
-                        pointsCnt ++;
+                        points.add( Double.parseDouble(w)) ;
+                        //points[pointsCnt] = Double.parseDouble(w);
+                        //pointsCnt ++;
                         arraySize ++;
 
                         // check array
-                        if (pointsCnt == points.length){
-                            int newsize = points.length + BLOCKSIZE;
-                            double[] newpoints = new double[newsize];
-                            System.arraycopy(points, 0, newpoints, 0, points.length);
-                            points = newpoints;
-                        }
+                        //if (pointsCnt == points.length){
+                        //    int newsize = points.length + BLOCKSIZE;
+                        //    double[] newpoints = new double[newsize];
+                        //    System.arraycopy(points, 0, newpoints, 0, points.length);
+                        //    points = newpoints;
+                        //}
                     }
                 }
                 else{
                     //random number format
                     //number of points
                     int numPoints = Integer.parseInt(parts[0]);
+                    arraySize = numPoints*cenVecSize;
+                    pointsRet = new double[arraySize];
                     Random r = new Random();
                     for(int i=0; i< numPoints; i++){
                         for(int j=0; j< cenVecSize; j++){
-                            points[pointsCnt] = r.nextDouble();
-                            pointsCnt ++;
-                            arraySize ++;
-
+                            pointsRet[i*cenVecSize + j] = r.nextDouble();
+                            //points[pointsCnt] = r.nextDouble();
+                            //pointsCnt ++;
+                            //arraySize ++;
                             // check array
-                            if (pointsCnt == points.length){
-                                int newsize = points.length + BLOCKSIZE;
-                                double[] newpoints = new double[newsize];
-                                System.arraycopy(points, 0, newpoints, 0, points.length);
-                                points = newpoints;
-                            }
+                            //if (pointsCnt == points.length){
+                            //    int newsize = points.length + BLOCKSIZE;
+                            //    double[] newpoints = new double[newsize];
+                            //    System.arraycopy(points, 0, newpoints, 0, points.length);
+                            //    points = newpoints;
+                            //}
                         }
                     }
+
                 }
         }
 
@@ -200,15 +204,18 @@ public final class DataLoader
 
         if (yfccFormat == 1){
             LOG.info("reading data points: " + arraySize);
+            ////convert into double[]
+            pointsRet = new double[arraySize];
+            //System.arraycopy(points, 0, pointsRet, 0, arraySize);
+            for(int i = 0; i < arraySize; i++){
+                pointsRet[i] = points.get(i);
+            }
         }
         else{
             LOG.info("generating data points: " + arraySize);
         }
  
-        ////convert into double[]
-        double[] pointsRet = new double[arraySize];
-        System.arraycopy(points, 0, pointsRet, 0, arraySize);
-        
+       
         return pointsRet;
     }
 

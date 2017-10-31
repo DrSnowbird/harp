@@ -154,9 +154,11 @@ public class KMeansDaalCollectiveMapper
 
             //pointArrays are used in daal table with feature dimension to be
             //vectorSize instead of cenVecSize
+            //use too many threads to load data will consume lots of memory
+            //it's better to confine the threads number lower than 10
             List<double[]> pointArrays =
-                KMUtil.loadPoints(fileNames, pointsPerFile,
-                        vectorSize, conf, numThreads);
+                //KMUtil.loadPoints(fileNames, pointsPerFile, vectorSize, conf, numThreads);
+                KMUtil.loadPoints(fileNames, pointsPerFile, vectorSize, conf, 8);
 
             //---------------- convert cenTable and pointArrays to Daal table ------------------
             //create the daal table for pointsArrays
